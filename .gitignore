@@ -1,3 +1,7 @@
+#Custom
+.env
+datadog-ci.json
+
 # OSX
 #
 .DS_Store

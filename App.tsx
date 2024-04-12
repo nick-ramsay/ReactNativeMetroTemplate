@@ -25,6 +25,56 @@ import {
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 
+import {
+  BatchSize,
+  DatadogProvider,
+  DatadogProviderConfiguration,
+  SdkVerbosity,
+  UploadFrequency,
+} from "@datadog/mobile-react-native";
+
+import { DD_RUM_CLIENT_TOKEN, DD_RUM_APPLICATION_ID } from '@env';
+
+const config = new DatadogProviderConfiguration(
+  DD_RUM_CLIENT_TOKEN,
+  "staging",
+  DD_RUM_APPLICATION_ID,
+  true, // track User interactions (e.g.: Tap on buttons. You can use 'accessibilityLabel' element property to give tap action the name, otherwise element type will be reported)
+  true, // track XHR Resources
+  true // track Errors
+)
+// Optional: Select your Datadog website (one of "US1", "EU1", "US3", "US5", "AP1" or "GOV")
+config.site = "US1"
+// Optional: Enable JavaScript long task collection
+config.longTaskThresholdMs = 100
+// Optional: enable or disable native crash reports
+config.nativeCrashReportEnabled = true 
+// Optional: sample RUM sessions (here, 100% of session will be sent to Datadog. Default = 100%)
+config.sampleRate = 100
+config.version = "1.0.1"
+
+
+if (__DEV__) {
+  // Optional: Send data more frequently
+  config.uploadFrequency = UploadFrequency.FREQUENT
+  // Optional: Send smaller batches of data
+  config.batchSize = BatchSize.SMALL
+  // Optional: Enable debug logging
+  config.verbosity = SdkVerbosity.DEBUG
+}
+
+//Wrap the content of your App component by a DatadogProvider component, passing it your configuration:
+/*export default function App() {
+  return (
+      <DatadogProvider configuration={config}>
+          <Navigation />
+      </DatadogProvider>
+  );
+}
+*/
+
+// Once SDK is initialized you need to setup view tracking to be able to see data in the RUM Dashboard.
+
 type SectionProps = PropsWithChildren<{
   title: string;
 }>;
@@ -63,6 +113,7 @@ function App(): React.JSX.Element {
   };
 
   return (
+    <DatadogProvider configuration={config}>
     <SafeAreaView style={backgroundStyle}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
@@ -93,6 +144,7 @@ function App(): React.JSX.Element {
         </View>
       </ScrollView>
     </SafeAreaView>
+     </DatadogProvider>
   );
 }
 
