@@ -15,6 +15,7 @@ import {
   Text,
   useColorScheme,
   View,
+  Button,
 } from 'react-native';
 
 import {
@@ -51,7 +52,7 @@ config.longTaskThresholdMs = 100
 config.nativeCrashReportEnabled = true
 // Optional: sample RUM sessions (here, 100% of session will be sent to Datadog. Default = 100%)
 config.sampleRate = 100
-config.version = "1.0.0"
+config.version = "1.0.5"
 
 if (__DEV__) {
   // Optional: Send data more frequently
@@ -111,6 +112,19 @@ function App(): React.JSX.Element {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  const forceCrash = () => {
+    const test: any = {};
+    console.log(test.should.crash);
+  };
+
+  const createLoggerErrorLog = () => {
+    DdLogs.error("Unknown error - DdLogs");
+  }
+
+  const createConsoleErrorLog = () => {
+    console.error("Unknown error - console");
+  }
+
   return (
     <DatadogProvider configuration={config}>
       <SafeAreaView style={backgroundStyle}>
@@ -126,6 +140,29 @@ function App(): React.JSX.Element {
             style={{
               backgroundColor: isDarkMode ? Colors.black : Colors.white,
             }}>
+            <Section title="Generate an Error">
+              <View style={styles.buttonContainer}>
+                <Button
+                  color="#642ba6"
+                  title={'Crash App'}
+                  onPress={forceCrash}
+                />
+              </View>
+              <View style={styles.buttonContainer}>
+                <Button
+                  color="#642ba6"
+                  title={'Create Logger Error Log'}
+                  onPress={createLoggerErrorLog}
+                />
+              </View>
+              <View style={styles.buttonContainer}>
+                <Button
+                  color="#642ba6"
+                  title={'Create Console Error Log'}
+                  onPress={createConsoleErrorLog}
+                />
+              </View>
+            </Section>
             <Section title="Step One">
               Edit <Text style={styles.highlight}>App.tsx</Text> to change this
               screen and then come back to see your edits.
@@ -163,6 +200,11 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontWeight: '700',
+  },
+  buttonContainer: {
+    marginTop: 15,
+    paddingRight: 15,
+    paddingLeft: 15,
   },
 });
 
