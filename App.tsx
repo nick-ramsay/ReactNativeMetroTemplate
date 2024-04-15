@@ -34,6 +34,8 @@ import {
   UploadFrequency,
 } from "@datadog/mobile-react-native";
 
+import { DdLogs } from '@datadog/mobile-react-native';
+
 import { DD_RUM_CLIENT_TOKEN, DD_RUM_APPLICATION_ID } from '@env';
 
 const config = new DatadogProviderConfiguration(
@@ -52,7 +54,7 @@ config.longTaskThresholdMs = 100
 config.nativeCrashReportEnabled = true
 // Optional: sample RUM sessions (here, 100% of session will be sent to Datadog. Default = 100%)
 config.sampleRate = 100
-config.version = "1.0.5"
+config.version = "1.0.6"
 
 if (__DEV__) {
   // Optional: Send data more frequently
@@ -125,6 +127,10 @@ function App(): React.JSX.Element {
     console.error("Unknown error - console");
   }
 
+  const generateInfoLog = () => {
+    DdLogs.info("Here's a React Native INFO log", { infoLogKey: "Info Log Value" })
+  }
+
   return (
     <DatadogProvider configuration={config}>
       <SafeAreaView style={backgroundStyle}>
@@ -141,25 +147,36 @@ function App(): React.JSX.Element {
               backgroundColor: isDarkMode ? Colors.black : Colors.white,
             }}>
             <Section title="Generate an Error">
-              <View style={styles.buttonContainer}>
-                <Button
-                  color="#642ba6"
-                  title={'Crash App'}
-                  onPress={forceCrash}
-                />
+              <View>
+                <View style={styles.buttonContainer}>
+                  <Button
+                    color="#e0115f"
+                    title={'Crash App'}
+                    onPress={forceCrash}
+                  />
+                </View>
+                <View style={styles.buttonContainer}>
+                  <Button
+                    color="#e0115f"
+                    title={'Create Logger Error Log'}
+                    onPress={createLoggerErrorLog}
+                  />
+                </View>
+                <View style={styles.buttonContainer}>
+                  <Button
+                    color="#e0115f"
+                    title={'Create Console Error Log'}
+                    onPress={createConsoleErrorLog}
+                  />
+                </View>
               </View>
+            </Section>
+            <Section title="Generate Logs">
               <View style={styles.buttonContainer}>
                 <Button
-                  color="#642ba6"
-                  title={'Create Logger Error Log'}
-                  onPress={createLoggerErrorLog}
-                />
-              </View>
-              <View style={styles.buttonContainer}>
-                <Button
-                  color="#642ba6"
-                  title={'Create Console Error Log'}
-                  onPress={createConsoleErrorLog}
+                  color="#FFBF00"
+                  title={'Generate Info Log'}
+                  onPress={generateInfoLog}
                 />
               </View>
             </Section>

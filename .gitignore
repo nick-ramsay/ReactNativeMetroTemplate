@@ -1,7 +1,7 @@
 #Custom
 .env
 datadog-ci.json
-manual_source_map_upload.txt
+datadog-ci-source-map-upload.txt
 
 # OSX
 #
