@@ -5,7 +5,27 @@
  * @format
  */
 
-import React from 'react';
+
+
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import {
+  DdSdkReactNative,
+  DatadogProviderConfiguration,
+  DatadogProvider,
+  DdLogs,
+  ErrorSource,
+  RumActionType,
+  DdRum,
+  SdkVerbosity,
+  UploadFrequency,
+  BatchSize,
+} from '@datadog/mobile-react-native';
+
+import {
+  DdRumReactNavigationTracking,
+  ViewNamePredicate,
+} from '@datadog/mobile-react-navigation';
 import type { PropsWithChildren } from 'react';
 import {
   SafeAreaView,
@@ -16,7 +36,11 @@ import {
   useColorScheme,
   View,
   Button,
+  Image,
 } from 'react-native';
+
+import { NavigationContainer, Route } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import {
   Colors,
@@ -25,16 +49,6 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
-
-import {
-  BatchSize,
-  DatadogProvider,
-  DatadogProviderConfiguration,
-  SdkVerbosity,
-  UploadFrequency,
-} from "@datadog/mobile-react-native";
-
-import { DdLogs } from '@datadog/mobile-react-native';
 
 import { DD_RUM_CLIENT_TOKEN, DD_RUM_APPLICATION_ID } from '@env';
 
@@ -54,7 +68,7 @@ config.longTaskThresholdMs = 100
 config.nativeCrashReportEnabled = true
 // Optional: sample RUM sessions (here, 100% of session will be sent to Datadog. Default = 100%)
 config.sampleRate = 100
-config.version = "1.0.6"
+config.version = "1.0.11"
 
 if (__DEV__) {
   // Optional: Send data more frequently
@@ -64,6 +78,8 @@ if (__DEV__) {
   // Optional: Enable debug logging
   config.verbosity = SdkVerbosity.DEBUG
 }
+
+config.firstPartyHosts = ["https://randomuser.me/api/"];
 
 //Wrap the content of your App component by a DatadogProvider component, passing it your configuration:
 /*export default function App() {
@@ -76,6 +92,8 @@ if (__DEV__) {
 */
 
 // Once SDK is initialized you need to setup view tracking to be able to see data in the RUM Dashboard.
+
+const Stack = createNativeStackNavigator();
 
 type SectionProps = PropsWithChildren<{
   title: string;
@@ -114,6 +132,43 @@ function App(): React.JSX.Element {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  var [userFirstName, setUserFirstname] = useState('');
+  var [userLastName, setUserLastName] = useState('');
+  var [pictureURL, setPictureURL] = useState('');
+  var [userEmail, setUserEmail] = useState('');
+  var [userId, setUserId] = useState('');
+
+  const changeUser = () => {
+    axios({
+      method: 'get',
+      url: 'https://randomuser.me/api/',
+    }).then(response => {
+      let userDataResults = response.data.results[0];
+      setUserFirstname(userFirstName => userDataResults.name.first);
+      setUserLastName(userLastname => userDataResults.name.last);
+      setPictureURL(pictureURL => userDataResults.picture.large);
+      setUserEmail(userEmail => userDataResults.email);
+      setUserId(userId => userDataResults.login.uuid);
+
+      DdSdkReactNative.setUser({
+        id: userDataResults.login.uuid,
+        name: userDataResults.name.first + ' ' + userDataResults.name.last,
+        email: userDataResults.email,
+        type: 'premium',
+      });
+    });
+  };
+
+  const changeUserImage = () => {
+    axios({
+      method: 'get',
+      url: 'https://randomuser.me/api/',
+    }).then(response => {
+      let userDataResults = response.data.results[0];
+      setPictureURL(pictureURL => userDataResults.picture.large);
+    });
+  };
+
   const forceCrash = () => {
     const test: any = {};
     console.log(test.should.crash);
@@ -131,77 +186,186 @@ function App(): React.JSX.Element {
     DdLogs.info("Here's a React Native INFO log", { infoLogKey: "Info Log Value" })
   }
 
-  return (
-    <DatadogProvider configuration={config}>
-      <SafeAreaView style={backgroundStyle}>
-        <StatusBar
-          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={backgroundStyle.backgroundColor}
+  const HomeScreen = ({ navigation }: { navigation: any }) => {
+    return (
+      <View>
+        <SafeAreaView style={backgroundStyle}>
+          <StatusBar
+            barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+            backgroundColor={backgroundStyle.backgroundColor}
+          />
+          <ScrollView
+            contentInsetAdjustmentBehavior="automatic"
+            style={backgroundStyle}>
+            <View>
+              <Text style={styles.titleText}>
+                {userId !== ''
+                  ? 'Welcome, ' + userFirstName + ' ' + userLastName + '!'
+                  : ''}
+              </Text>
+              <Image
+                style={styles.logo}
+                source={
+                  pictureURL !== ''
+                    ? { uri: pictureURL }
+                    : require('./images/dd_logo_v_rgb.png')
+                }
+              />
+            </View>
+            <View
+              style={{
+                backgroundColor: isDarkMode ? Colors.black : Colors.white,
+              }}>
+              <Section title="Generate an Resource">
+                <View>
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      color="#642ba6"
+                      title="Change User Image"
+                      onPress={changeUserImage}
+                    />
+                  </View>
+                </View>
+              </Section>
+              <Section title="Generate an Error">
+                <View>
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      color="#e0115f"
+                      title={'Crash App'}
+                      onPress={forceCrash}
+                    />
+                  </View>
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      color="#e0115f"
+                      title={'Create Logger Error Log'}
+                      onPress={createLoggerErrorLog}
+                    />
+                  </View>
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      color="#e0115f"
+                      title={'Create Console Error Log'}
+                      onPress={createConsoleErrorLog}
+                    />
+                  </View>
+                </View>
+              </Section>
+              <Section title="Generate Logs">
+                <View style={styles.buttonContainer}>
+                  <Button
+                    color="#FFBF00"
+                    title={'Generate Info Log'}
+                    onPress={generateInfoLog}
+                  />
+                </View>
+              </Section>
+              <Section title="Alternative View">
+              <View style={styles.bottomButtonContainer}>
+                  <Button
+                    color="#009473"
+                    title={'New Page/View'}
+                    onPress={() => navigation.navigate(AlternateView, {})}
+                  />
+                </View>
+              </Section>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    )
+  }
+
+  const AlternateView = () => {
+    return (
+      <View>
+        <Image
+          style={styles.alternateLogo}
+          source={require('./images/dd_logo_v_rgb.png')}
         />
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={backgroundStyle}>
-          <Header />
-          <View
-            style={{
-              backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            }}>
-            <Section title="Generate an Error">
-              <View>
-                <View style={styles.buttonContainer}>
-                  <Button
-                    color="#e0115f"
-                    title={'Crash App'}
-                    onPress={forceCrash}
-                  />
-                </View>
-                <View style={styles.buttonContainer}>
-                  <Button
-                    color="#e0115f"
-                    title={'Create Logger Error Log'}
-                    onPress={createLoggerErrorLog}
-                  />
-                </View>
-                <View style={styles.buttonContainer}>
-                  <Button
-                    color="#e0115f"
-                    title={'Create Console Error Log'}
-                    onPress={createConsoleErrorLog}
-                  />
-                </View>
-              </View>
-            </Section>
-            <Section title="Generate Logs">
-              <View style={styles.buttonContainer}>
-                <Button
-                  color="#FFBF00"
-                  title={'Generate Info Log'}
-                  onPress={generateInfoLog}
-                />
-              </View>
-            </Section>
-            <Section title="Step One">
-              Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-              screen and then come back to see your edits.
-            </Section>
-            <Section title="See Your Changes">
-              <ReloadInstructions />
-            </Section>
-            <Section title="Debug">
-              <DebugInstructions />
-            </Section>
-            <Section title="Learn More">
-              Read the docs to discover what to do next:
-            </Section>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      </View>
+    );
+  };
+
+
+  let interactive = true;
+
+  useEffect(() => {
+    changeUser();
+    if (!interactive) return;
+    void DdRum.addTiming('interactive');
+  }, [interactive]);
+
+  const navigationRef = React.useRef(null);
+  return (
+
+    <DatadogProvider configuration={config}>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => {
+          DdRumReactNavigationTracking.startTrackingViews(
+            navigationRef.current,
+          );
+        }}>
+        <Stack.Navigator initialRouteName="Datadog React Native Metro Sandbox">
+          <Stack.Screen
+            name="Datadog React Native Metro Sandbox"
+            component={HomeScreen}
+            options={{
+              headerStyle: {
+                backgroundColor: '#642ba6',
+              },
+              headerTitleStyle: {
+                color: 'white',
+              },
+            }}
+          />
+          <Stack.Screen
+            name="AlternateView"
+            component={AlternateView}
+            options={{
+              headerTitle: 'Alternative View',
+              headerStyle: {
+                backgroundColor: '#642ba6',
+              },
+              headerTintColor: 'white',
+              headerTitleStyle: {
+                color: 'white',
+              },
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
     </DatadogProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  titleText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: 'black',
+    marginTop: 28,
+    marginBottom: 18,
+    paddingHorizontal: 24,
+  },
+  highlight: {
+    fontWeight: '700',
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    alignSelf: 'center',
+    marginBottom: 18,
+  },
+  alternateLogo: {
+    width: 150,
+    height: 150,
+    alignSelf: 'center',
+    marginTop: 28,
+    marginBottom: 18,
+  },
   sectionContainer: {
     marginTop: 32,
     paddingHorizontal: 24,
@@ -222,6 +386,12 @@ const styles = StyleSheet.create({
     marginTop: 15,
     paddingRight: 15,
     paddingLeft: 15,
+  },
+  bottomButtonContainer: {
+    marginTop: 15,
+    paddingRight: 15,
+    paddingLeft: 15,
+    paddingBottom: 15,
   },
 });
 
