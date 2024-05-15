@@ -52,6 +52,8 @@ import {
 
 import { DD_RUM_CLIENT_TOKEN, DD_RUM_APPLICATION_ID } from '@env';
 
+//Datadog RUM Start
+
 const config = new DatadogProviderConfiguration(
   DD_RUM_CLIENT_TOKEN,
   "staging",
@@ -81,6 +83,8 @@ if (__DEV__) {
 }
 
 config.firstPartyHosts = ["https://randomuser.me/api/"];
+
+//Datadog RUM End
 
 //Wrap the content of your App component by a DatadogProvider component, passing it your configuration:
 /*export default function App() {
