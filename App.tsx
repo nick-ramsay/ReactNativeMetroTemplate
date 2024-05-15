@@ -68,7 +68,8 @@ config.longTaskThresholdMs = 100
 config.nativeCrashReportEnabled = true
 // Optional: sample RUM sessions (here, 100% of session will be sent to Datadog. Default = 100%)
 config.sampleRate = 100
-config.version = "1.0.11"
+config.version = "1.0.27"
+config.verbosity = SdkVerbosity.DEBUG
 
 if (__DEV__) {
   // Optional: Send data more frequently
@@ -174,8 +175,15 @@ function App(): React.JSX.Element {
     console.log(test.should.crash);
   };
 
+  const triggerCrash = () => {
+    const obj = {};
+    const a = obj.name.surname;
+  };
+
   const createLoggerErrorLog = () => {
     DdLogs.error("Unknown error - DdLogs");
+    DdRum.addError('Test Error', ErrorSource.SOURCE, '<stacktrace>', {}, Date.now());
+    console.error("Console level error")
   }
 
   const createConsoleErrorLog = () => {
@@ -183,7 +191,51 @@ function App(): React.JSX.Element {
   }
 
   const generateInfoLog = () => {
-    DdLogs.info("Here's a React Native INFO log", { infoLogKey: "Info Log Value" })
+
+    const context = {
+      "context": {
+        "app_id": "Cvent Events",
+        "application_version": "0.0.0.1",
+        "attendeeId": "7d62fc4b-08a0-4f32-989e-16eaaedb26d4",
+        "cvent_app_id": "28677ebd-b2db-46c4-9ed4-f90db9adea1f",
+        "cvent_version": "0.0.0-1",
+        "device_id": "84eb287f-7bd4-4147-a550-60b3c5abe105",
+        "device_model": "iPhone",
+        "eventId": "ff6775c1-c849-4299-9cb0-68e91c8b1dc3",
+        "event_id": "ff6775c1-c849-4299-9cb0-68e91c8b1dc3",
+        "language": "en-IN",
+        "os": "ios",
+        "os_version": "17.2",
+        "timezone": "America/Los_Angeles"
+      }
+    }
+
+    DdLogs.info("Here's a React Native INFO log", context)
+  }
+
+  const generateDebugLog = () => {
+    const context = {
+      "context": {
+        "app_id": "Cvent Events",
+        "application_version": "0.0.0.1",
+        "attendeeId": "7d62fc4b-08a0-4f32-989e-16eaaedb26d4",
+        "cvent_app_id": "28677ebd-b2db-46c4-9ed4-f90db9adea1f",
+        "cvent_version": "0.0.0-1",
+        "device_id": "84eb287f-7bd4-4147-a550-60b3c5abe105",
+        "device_model": "iPhone",
+        "eventId": "ff6775c1-c849-4299-9cb0-68e91c8b1dc3",
+        "event_id": "ff6775c1-c849-4299-9cb0-68e91c8b1dc3",
+        "language": "en-IN",
+        "os": "ios",
+        "os_version": "17.2",
+        "timezone": "America/Los_Angeles"
+      },
+      "logger": {
+        "name": "DatadogLoggingTester"
+      }
+    }
+    const message = "resolved via query";
+    DdLogs.debug(message, context);
   }
 
   const HomeScreen = ({ navigation }: { navigation: any }) => {
@@ -216,11 +268,11 @@ function App(): React.JSX.Element {
               style={{
                 backgroundColor: isDarkMode ? Colors.black : Colors.white,
               }}>
-              <Section title="Generate an Resource">
+              <Section title="Generate an Resource" style={styles.sectionHeader}>
                 <View>
                   <View style={styles.buttonContainer}>
                     <Button
-                      color="#642ba6"
+                      color="#65626a"
                       title="Change User Image"
                       onPress={changeUserImage}
                     />
@@ -253,16 +305,25 @@ function App(): React.JSX.Element {
                 </View>
               </Section>
               <Section title="Generate Logs">
-                <View style={styles.buttonContainer}>
-                  <Button
-                    color="#FFBF00"
-                    title={'Generate Info Log'}
-                    onPress={generateInfoLog}
-                  />
-                </View>
+                <View>
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      color="#FFBF00"
+                      title={'Generate Info Log'}
+                      onPress={generateInfoLog}
+                    />
+                  </View>
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      color="#FFBF00"
+                      title={'Generate Debug Log'}
+                      onPress={generateDebugLog}
+                    />
+                  </View>
+                  </View>
               </Section>
               <Section title="Alternative View">
-              <View style={styles.bottomButtonContainer}>
+                <View style={styles.bottomButtonContainer}>
                   <Button
                     color="#009473"
                     title={'New Page/View'}
@@ -271,74 +332,76 @@ function App(): React.JSX.Element {
                 </View>
               </Section>
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
+     
+        </ScrollView>
+      </SafeAreaView>
+      </View >
     )
-  }
+}
 
-  const AlternateView = () => {
-    return (
-      <View>
-        <Image
-          style={styles.alternateLogo}
-          source={require('./images/dd_logo_v_rgb.png')}
-        />
-      </View>
-    );
-  };
-
-
-  let interactive = true;
-
-  useEffect(() => {
-    changeUser();
-    if (!interactive) return;
-    void DdRum.addTiming('interactive');
-  }, [interactive]);
-
-  const navigationRef = React.useRef(null);
+const AlternateView = () => {
   return (
-
-    <DatadogProvider configuration={config}>
-      <NavigationContainer
-        ref={navigationRef}
-        onReady={() => {
-          DdRumReactNavigationTracking.startTrackingViews(
-            navigationRef.current,
-          );
-        }}>
-        <Stack.Navigator initialRouteName="Datadog React Native Metro Sandbox">
-          <Stack.Screen
-            name="Datadog React Native Metro Sandbox"
-            component={HomeScreen}
-            options={{
-              headerStyle: {
-                backgroundColor: '#642ba6',
-              },
-              headerTitleStyle: {
-                color: 'white',
-              },
-            }}
-          />
-          <Stack.Screen
-            name="AlternateView"
-            component={AlternateView}
-            options={{
-              headerTitle: 'Alternative View',
-              headerStyle: {
-                backgroundColor: '#642ba6',
-              },
-              headerTintColor: 'white',
-              headerTitleStyle: {
-                color: 'white',
-              },
-            }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </DatadogProvider>
+    <View>
+      <Image
+        style={styles.alternateLogo}
+        source={require('./images/dd_logo_v_rgb.png')}
+      />
+    </View>
   );
+};
+
+
+let interactive = true;
+
+useEffect(() => {
+  //triggerCrash();
+  changeUser();
+  setUserFirstname(userFirstName => "Cosmo");
+  if (!interactive) return;
+  void DdRum.addTiming('interactive');
+}, [interactive]);
+
+const navigationRef = React.useRef(null);
+return (
+  <DatadogProvider configuration={config}>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        DdRumReactNavigationTracking.startTrackingViews(
+          navigationRef.current,
+        );
+      }}>
+      <Stack.Navigator initialRouteName="Datadog React Native Metro Sandbox">
+        <Stack.Screen
+          name="Datadog React Native Metro Sandbox"
+          component={HomeScreen}
+          options={{
+            headerStyle: {
+              backgroundColor: '#642ba6',
+            },
+            headerTitleStyle: {
+              color: 'white',
+            },
+          }}
+        />
+        <Stack.Screen
+          name="AlternateView"
+          component={AlternateView}
+          options={{
+            headerTitle: 'Alternative View',
+            headerStyle: {
+              backgroundColor: '#642ba6',
+            },
+            headerTintColor: 'white',
+            headerTitleStyle: {
+              color: 'white',
+            },
+          }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  </DatadogProvider>
+);
 }
 
 const styles = StyleSheet.create({
@@ -349,6 +412,9 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginBottom: 18,
     paddingHorizontal: 24,
+  },
+  sectionHeader: {
+    fontSize: 10
   },
   highlight: {
     fontWeight: '700',
